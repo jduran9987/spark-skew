@@ -2,7 +2,6 @@
 
 import numpy as np
 import pytest
-
 from generator.distribution import customer_distribution
 
 SIZE = 200_000
@@ -16,11 +15,21 @@ def _seed_random() -> None:
 
 
 def _counts_per_customer(customer_ids: np.ndarray, customer_count: int) -> np.ndarray:
-    """Return order counts per customer_id, indexed 0 (unused) through customer_count."""
+    """Return order counts per customer_id, indexed 0 (unused) through customer_count.
+
+    Args:
+        customer_ids: Array of customer IDs, one per generated order.
+        customer_count: Total number of distinct customers to bucket counts for.
+
+    Returns:
+        np.ndarray: Array of length `customer_count` where index `i` holds
+            the order count for customer ID `i + 1`.
+    """
     return np.bincount(customer_ids, minlength=customer_count + 1)[1:]
 
 
 def test_balance_distributes_orders_evenly_across_all_customers() -> None:
+    """Verify "balance" skew spreads orders uniformly across all customers."""
     result = customer_distribution(SIZE, CUSTOMER_COUNT, "balance")
 
     assert result.shape == (SIZE,)
@@ -37,6 +46,7 @@ def test_balance_distributes_orders_evenly_across_all_customers() -> None:
 
 
 def test_low_skew_sends_about_90_percent_of_orders_to_40_percent_of_customers() -> None:
+    """Verify "low" skew concentrates ~90% of orders on ~40% of customers."""
     result = customer_distribution(SIZE, CUSTOMER_COUNT, "low")
 
     assert result.shape == (SIZE,)
@@ -55,6 +65,7 @@ def test_low_skew_sends_about_90_percent_of_orders_to_40_percent_of_customers() 
 
 
 def test_high_skew_sends_about_90_percent_of_orders_to_1_percent_of_customers() -> None:
+    """Verify "high" skew concentrates ~90% of orders on ~1% of customers."""
     result = customer_distribution(SIZE, CUSTOMER_COUNT, "high")
 
     assert result.shape == (SIZE,)
@@ -71,6 +82,7 @@ def test_high_skew_sends_about_90_percent_of_orders_to_1_percent_of_customers() 
 
 
 def test_high_skew_concentrates_orders_more_than_low_skew() -> None:
+    """Verify "high" skew packs more orders per hot customer than "low" skew."""
     low_result = customer_distribution(SIZE, CUSTOMER_COUNT, "low")
     high_result = customer_distribution(SIZE, CUSTOMER_COUNT, "high")
 
@@ -90,5 +102,6 @@ def test_high_skew_concentrates_orders_more_than_low_skew() -> None:
 
 
 def test_unsupported_skew_raises_value_error() -> None:
+    """Verify an unrecognized skew value raises ValueError."""
     with pytest.raises(ValueError):
         customer_distribution(SIZE, CUSTOMER_COUNT, "bogus")
