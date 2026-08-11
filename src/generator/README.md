@@ -100,10 +100,10 @@ changes.
 
 ## Usage
 
-Run the CLI as a module, with `source/` on your `PYTHONPATH`:
+Run the CLI via the `generate-source-data` script entry point:
 
 ```bash
-PYTHONPATH=source python -m generator.cli \
+uv run generate-source-data \
     --customers 1000000 \
     --order-events 50000000 \
     --skew high \

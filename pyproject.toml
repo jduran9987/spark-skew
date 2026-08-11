@@ -15,7 +15,7 @@ dependencies = [
 
 [project.scripts]
 spark-skew = "spark_skew:main"
-generate-lakehouse-data = "generator.cli:main"
+generate-source-data = "generator.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.9.18,<0.10.0"]
@@ -28,4 +28,4 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["source"]
+pythonpath = ["src"]

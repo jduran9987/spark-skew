@@ -7,7 +7,7 @@ to compare join behavior under balanced and skewed conditions.
 ## Sources
 
 The datasets used in this project — `customers` and `orders` — are
-synthetic data produced by the [generator](source/generator/README.md)
+synthetic data produced by the [generator](src/generator/README.md)
 package, written as partitioned Parquet on S3 and cataloged in Glue.
 
 - **`customers`** is the dimension side of the join: one row per customer,
@@ -36,5 +36,5 @@ Because table sizes stay the same across skew levels, skew is the only
 variable changing between runs, which is what makes it possible to
 attribute join performance differences to skew rather than data volume.
 
-See [`source/generator/README.md`](source/generator/README.md) for the
+See [`src/generator/README.md`](src/generator/README.md) for the
 full schema and CLI reference for both tables.
