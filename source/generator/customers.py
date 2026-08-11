@@ -39,15 +39,18 @@ COUNTRIES = [
 def generate_customers(
     count: int,
     output: str,
-    ingested_at: date
+    ingested_at: date,
+    table_name: str = "customers"
 ) -> None:
     """Generate synthetic customers and write them to Parquet on S3.
 
     Args:
         count: Total number of customers to generate.
         output: S3 output prefix; customers are written under
-            `{output}/customers`.
+            `{output}/{table_name}`.
         ingested_at: Date the generator job ran, stamped onto every row.
+        table_name: Table name for the customers dataset; used as the S3
+            folder name customers are written under.
 
     Returns:
         None
@@ -120,6 +123,6 @@ def generate_customers(
 
     write_table_batches(
         batches(),
-        f"{output}/customers",
+        f"{output}/{table_name}",
         max_rows_per_file=MAX_ROWS_PER_FILE
     )

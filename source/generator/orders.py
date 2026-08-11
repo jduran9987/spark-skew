@@ -38,7 +38,8 @@ def generate_order_events(
     output: str,
     ingested_at: date,
     glue_database: str,
-    glue_table: str
+    glue_table: str,
+    table_name: str = "orders"
 ) -> None:
     """Generate synthetic order events, write them to Parquet on S3, and
     register the resulting `event_date` partitions in Glue.
@@ -49,11 +50,13 @@ def generate_order_events(
         skew: Customer distribution skew pattern to apply (see
             `customer_distribution`).
         output: S3 output prefix; orders are written under
-            `{output}/orders`.
+            `{output}/{table_name}`.
         ingested_at: Date the generator job ran, stamped onto every row.
         glue_database: Glue database the orders table lives in.
         glue_table: Glue table to register new `event_date` partitions
             against.
+        table_name: Table name for the orders dataset; used as the S3
+            folder name order events are written under.
 
     Returns:
         None
@@ -166,7 +169,7 @@ def generate_order_events(
 
     partition_locations = write_table_batches(
         batches(),
-        f"{output}/orders",
+        f"{output}/{table_name}",
         partition_column="event_date",
         max_rows_per_file=MAX_ROWS_PER_FILE
     )

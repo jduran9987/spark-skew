@@ -16,7 +16,7 @@ invocation produced a given file.
 
 The writer (`parquet_writer.write_table_batches`) uses PyArrow's dataset
 writer to lay these out as Hive-style partition folders under
-`{output}/orders/`, e.g.:
+`{output}/{orders-tablename}/` (`{output}/orders/` by default), e.g.:
 
 ```
 s3://my-bucket/spark-skew/orders/event_date=2026-01-01/part-00000.parquet
@@ -28,7 +28,7 @@ s3://my-bucket/spark-skew/orders/event_date=2026-01-02/part-00000.parquet
 column inside the Parquet files themselves — it's encoded only in the
 folder path, standard Hive convention. Customer records are not
 partitioned; they're written as a flat set of files under
-`{output}/customers/`.
+`{output}/{customers-tablename}/` (`{output}/customers/` by default).
 
 After the orders write completes, the generator registers every
 `event_date` partition it just wrote against the Glue Data Catalog (via
@@ -42,7 +42,8 @@ in the catalog is a no-op rather than an error.
 
 ### `customers`
 
-Not partitioned; written as a flat set of files under `{output}/customers`.
+Not partitioned; written as a flat set of files under
+`{output}/{customers-tablename}`.
 
 | Column              | Type                    | Notes                                                        |
 |---------------------|-------------------------|---------------------------------------------------------------|
@@ -55,7 +56,8 @@ Not partitioned; written as a flat set of files under `{output}/customers`.
 
 ### `orders`
 
-Partitioned in S3 by `event_date`. Written under `{output}/orders/event_date=YYYY-MM-DD/`.
+Partitioned in S3 by `event_date`. Written under
+`{output}/{orders-tablename}/event_date=YYYY-MM-DD/`.
 
 | Column            | Type                     | Notes                                                                 |
 |-------------------|--------------------------|-------------------------------------------------------------------------|
@@ -107,20 +109,26 @@ PYTHONPATH=source python -m generator.cli \
     --skew high \
     --output s3://my-bucket/spark-skew \
     --glue-database sparkskew_db \
-    --glue-table orders
+    --glue-table orders_v3 \
+    --customers-tablename customers_v3 \
+    --orders-tablename orders_v3
 ```
 
 This generates `--customers` customer records and `--order-events` order
-events, and writes them under `s3://my-bucket/spark-skew/customers` and
-`s3://my-bucket/spark-skew/orders` respectively.
+events, and writes them under `s3://my-bucket/spark-skew/customers_v3` and
+`s3://my-bucket/spark-skew/orders_v3` respectively. `--customers-tablename`
+and `--orders-tablename` are optional and default to `customers` and
+`orders`.
 
 ## CLI Arguments
 
-| Flag              | Type | Required | Description                                                  |
-|-------------------|------|----------|----------------------------------------------------------------|
-| `--customers`     | int  | yes      | Number of customer records to generate.                      |
-| `--order-events`  | int  | yes      | Number of order event records to generate.                    |
-| `--skew`          | str  | yes      | Order-to-customer distribution pattern. One of `balance`, `low`, `high`. |
-| `--output`        | str  | yes      | S3 output prefix that datasets are written under.             |
-| `--glue-database` | str  | yes      | Glue database to register order-event `event_date` partitions in. |
-| `--glue-table`    | str  | yes      | Glue table to register order-event `event_date` partitions against. |
+| Flag                      | Type | Required | Description                                                  |
+|---------------------------|------|----------|----------------------------------------------------------------|
+| `--customers`             | int  | yes      | Number of customer records to generate.                      |
+| `--order-events`          | int  | yes      | Number of order event records to generate.                    |
+| `--skew`                  | str  | yes      | Order-to-customer distribution pattern. One of `balance`, `low`, `high`. |
+| `--output`                | str  | yes      | S3 output prefix that datasets are written under.             |
+| `--glue-database`         | str  | yes      | Glue database to register order-event `event_date` partitions in. |
+| `--glue-table`             | str  | yes      | Glue table to register order-event `event_date` partitions against. |
+| `--customers-tablename`   | str  | no       | Table name for the customers dataset; used as the S3 folder name customers are written under (`{output}/{customers-tablename}`). Defaults to `customers`. |
+| `--orders-tablename`      | str  | no       | Table name for the orders dataset; used as the S3 folder name order events are written under (`{output}/{orders-tablename}`). Defaults to `orders`. |

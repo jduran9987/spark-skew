@@ -60,6 +60,26 @@ def parse_args() -> argparse.Namespace:
         help="Glue table to register order-event partitions against"
     )
 
+    parser.add_argument(
+        "--customers-tablename",
+        default="customers",
+        help=(
+            "Table name for the customers dataset. Used as the S3 "
+            "folder name customers are written under, i.e. "
+            "'{output}/{customers-tablename}'. Defaults to 'customers'."
+        )
+    )
+
+    parser.add_argument(
+        "--orders-tablename",
+        default="orders",
+        help=(
+            "Table name for the orders dataset. Used as the S3 "
+            "folder name order events are written under, i.e. "
+            "'{output}/{orders-tablename}'. Defaults to 'orders'."
+        )
+    )
+
     return parser.parse_args()
 
 
@@ -72,7 +92,8 @@ def main() -> None:
     generate_customers(
         count=args.customers,
         output=args.output,
-        ingested_at=ingested_at
+        ingested_at=ingested_at,
+        table_name=args.customers_tablename
     )
 
     generate_order_events(
@@ -82,7 +103,8 @@ def main() -> None:
         output=args.output,
         ingested_at=ingested_at,
         glue_database=args.glue_database,
-        glue_table=args.glue_table
+        glue_table=args.glue_table,
+        table_name=args.orders_tablename
     )
 
 
