@@ -1,6 +1,7 @@
 """Command-line interface for generating Spark join benchmark datasets."""
 
 import argparse
+from datetime import UTC, datetime
 
 from generator.customers import generate_customers
 from generator.orders import generate_order_events
@@ -47,6 +48,18 @@ def parse_args() -> argparse.Namespace:
         help="S3 output prefix"
     )
 
+    parser.add_argument(
+        "--glue-database",
+        default="sparkskew_db",
+        help="Glue database to register order-event partitions in"
+    )
+
+    parser.add_argument(
+        "--glue-table",
+        default="orders",
+        help="Glue table to register order-event partitions against"
+    )
+
     return parser.parse_args()
 
 
@@ -54,16 +67,22 @@ def main() -> None:
     """Parse arguments and generate the customer and order event datasets."""
     args = parse_args()
 
+    ingested_at = datetime.now(UTC).date()
+
     generate_customers(
         count=args.customers,
-        output=args.output
+        output=args.output,
+        ingested_at=ingested_at
     )
 
     generate_order_events(
         count=args.order_events,
         customers=args.customers,
         skew=args.skew,
-        output=args.output
+        output=args.output,
+        ingested_at=ingested_at,
+        glue_database=args.glue_database,
+        glue_table=args.glue_table
     )
 
 

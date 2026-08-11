@@ -1,7 +1,7 @@
 """Generation of synthetic customer batches written out as Parquet."""
 
 from collections.abc import Iterator
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 import numpy as np
@@ -9,6 +9,14 @@ import numpy as np
 from generator.parquet_writer import write_table_batches
 
 BATCH_SIZE = 250_000
+
+# Bytes-per-row estimate for the physical Parquet columns:
+#   customer_id(8) + customer_name string(~15) + customer_segment
+#   string(~11) + country_code string(~2) + created_at(8) + ingested_at(4)
+#   = ~48 raw bytes/row. Applying the same ~2x snappy compression rule of
+# thumb used for orders gives ~24 compressed bytes/row. At 8,000,000
+# rows/file that lands ~192MB, inside the 128-256MB target.
+MAX_ROWS_PER_FILE = 8_000_000
 
 
 SEGMENTS = [
@@ -30,7 +38,8 @@ COUNTRIES = [
 
 def generate_customers(
     count: int,
-    output: str
+    output: str,
+    ingested_at: date
 ) -> None:
     """Generate synthetic customers and write them to Parquet on S3.
 
@@ -38,6 +47,7 @@ def generate_customers(
         count: Total number of customers to generate.
         output: S3 output prefix; customers are written under
             `{output}/customers`.
+        ingested_at: Date the generator job ran, stamped onto every row.
 
     Returns:
         None
@@ -99,12 +109,17 @@ def generate_customers(
                             )
                         )
                         for _ in range(size)
-                    ]
+                    ],
+
+
+                "ingested_at":
+                    [ingested_at] * size
             }
 
             current += size
 
     write_table_batches(
         batches(),
-        f"{output}/customers"
+        f"{output}/customers",
+        max_rows_per_file=MAX_ROWS_PER_FILE
     )
