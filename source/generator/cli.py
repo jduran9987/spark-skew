@@ -50,13 +50,13 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument(
         "--glue-database",
-        default="sparkskew_db",
+        required=True,
         help="Glue database to register order-event partitions in"
     )
 
     parser.add_argument(
         "--glue-table",
-        default="orders",
+        required=True,
         help="Glue table to register order-event partitions against"
     )
 

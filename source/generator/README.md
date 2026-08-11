@@ -1,8 +1,8 @@
-# generator
+# Customer and Orders Data Generator
 
 ## Description
 
-`generator` creates synthetic customer and order-event datasets for
+This package creates synthetic customer and order-event datasets for
 benchmarking Spark join performance under different data skew conditions.
 It writes both datasets as Parquet files to an S3 prefix.
 
@@ -62,14 +62,16 @@ Partitioned in S3 by `event_date`. Written under `{output}/orders/event_date=YYY
 | `order_id`        | `int64`                  | Sequential, starting at 1.                                              |
 | `customer_id`     | `int64`                  | Assigned per the `--skew` distribution; references `customers.customer_id`. |
 | `product_id`      | `int64`                  | Random, `1`–`99999`.                                                    |
-| `order_timestamp` | `timestamp[us]`          | Random timestamp within a fixed 90-day window starting 2026-01-01 (not tied to the job's real run time — see [order_timestamp source](#order_timestamp-source) below). |
+| `order_timestamp` | `timestamp[us]`          | Random timestamp within a fixed 90-day window starting 2026-01-01 (not tied to the job's real run time — see [order_timestamp source](#order_timestamp-source) in Behavior). |
 | `quantity`        | `int64`                  | Random, `1`–`9`.                                                        |
 | `unit_price`      | `decimal128(5, 2)`       | Random, `1.00`–`500.00`.                                                |
 | `event_type`      | `string`                 | One of `ORDER_CREATED`, `ORDER_UPDATED`, `ORDER_CANCELLED`.             |
 | `event_date`      | `date` (`YYYY-MM-DD`)    | **Partition column.** Derived from `order_timestamp`. Not physically stored as a column inside the Parquet files — encoded only in the `event_date=YYYY-MM-DD/` folder path (standard Hive convention). |
 | `ingested_at`     | `date32` (`YYYY-MM-DD`)  | Derived. Date the generator job ran; constant across the run.           |
 
-#### `order_timestamp` source
+## Behavior
+
+### `order_timestamp` source
 
 `order_timestamp` is generated from a fixed anchor (`2026-01-01 00:00:00`)
 plus a random offset of 0–90 days — it does **not** depend on when the
@@ -77,6 +79,22 @@ script is actually run. This means every generator run produces order
 events (and therefore `event_date` partitions) spread across the same
 `2026-01-01`–`2026-03-31` window, and rerunning the generator overwrites
 files within those same partition folders rather than creating new ones.
+
+### `skew` behavior
+
+The `--skew` cli arg controls how order events' `customer_id` values are distributed
+across the generated customers. The total number of orders and customers
+is unchanged by this flag — only how orders are spread across customers
+changes.
+
+- **`balance`** — Orders are distributed evenly across all customers, so
+  each customer receives approximately the same number of orders. This
+  represents a healthy join baseline with even Spark partition workloads.
+- **`low`** — ~90% of orders go to 40% of customers, with the remaining
+  10% spread randomly across all customers. This produces moderate skew.
+- **`high`** — ~90% of orders go to 1% of customers, with the remaining
+  10% spread randomly across all customers. This produces severe skew,
+  which can cause Spark join partition imbalance and straggler tasks.
 
 ## Usage
 
@@ -87,7 +105,9 @@ PYTHONPATH=source python -m generator.cli \
     --customers 1000000 \
     --order-events 50000000 \
     --skew high \
-    --output s3://my-bucket/spark-skew
+    --output s3://my-bucket/spark-skew \
+    --glue-database sparkskew_db \
+    --glue-table orders
 ```
 
 This generates `--customers` customer records and `--order-events` order
@@ -102,21 +122,5 @@ events, and writes them under `s3://my-bucket/spark-skew/customers` and
 | `--order-events`  | int  | yes      | Number of order event records to generate.                    |
 | `--skew`          | str  | yes      | Order-to-customer distribution pattern. One of `balance`, `low`, `high`. |
 | `--output`        | str  | yes      | S3 output prefix that datasets are written under.             |
-| `--glue-database` | str  | no       | Glue database to register order-event `event_date` partitions in. Defaults to `sparkskew_db`. |
-| `--glue-table`    | str  | no       | Glue table to register order-event `event_date` partitions against. Defaults to `orders`. |
-
-### `--skew` behavior
-
-`--skew` controls how order events' `customer_id` values are distributed
-across the generated customers. The total number of orders and customers
-is unchanged by this flag — only how orders are spread across customers
-changes.
-
-- **`balance`** — Orders are distributed evenly across all customers, so
-  each customer receives approximately the same number of orders. This
-  represents a healthy join baseline with even Spark partition workloads.
-- **`low`** — ~90% of orders go to 40% of customers, with the remaining
-  10% spread randomly across all customers. This produces moderate skew.
-- **`high`** — ~90% of orders go to 1% of customers, with the remaining
-  10% spread randomly across all customers. This produces severe skew,
-  which can cause Spark join partition imbalance and straggler tasks.
+| `--glue-database` | str  | yes      | Glue database to register order-event `event_date` partitions in. |
+| `--glue-table`    | str  | yes      | Glue table to register order-event `event_date` partitions against. |
