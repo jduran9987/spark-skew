@@ -38,3 +38,22 @@ attribute join performance differences to skew rather than data volume.
 
 See [`src/generator/README.md`](src/generator/README.md) for the
 full schema and CLI reference for both tables.
+
+## Infrastructure
+
+All datasets live in a single S3 bucket, with each table variant (e.g.
+`orders_v1`, `orders_v2`, `orders_v3` for the different skew levels, plus
+`customers_v1`/`v2`/`v3`) written to its own prefix within that bucket.
+Every variant is cataloged as its own Glue table in a shared Glue database,
+so they're all independently queryable via Spark/Athena while sharing one
+underlying bucket.
+
+Terraform (`infrastructure/`) owns the durable catalog resources: the S3
+bucket, the Glue database, and the Glue table definitions (schema, S3
+location, and partition keys) for each table variant. The `generator`
+package owns the data itself — writing Parquet files to S3 and, for
+partitioned tables, registering each new `event_date` partition against
+the corresponding Glue table via the Glue `BatchCreatePartition` API. In
+other words, Terraform defines the tables' shape and where they live;
+the generator fills them with data and keeps the partition metadata in
+sync as new data is written.
