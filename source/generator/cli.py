@@ -55,12 +55,6 @@ def parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--glue-table",
-        required=True,
-        help="Glue table to register order-event partitions against"
-    )
-
-    parser.add_argument(
         "--customers-tablename",
         default="customers",
         help=(
@@ -103,7 +97,7 @@ def main() -> None:
         output=args.output,
         ingested_at=ingested_at,
         glue_database=args.glue_database,
-        glue_table=args.glue_table,
+        glue_table=args.orders_tablename,
         table_name=args.orders_tablename
     )
 

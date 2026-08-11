@@ -109,7 +109,6 @@ PYTHONPATH=source python -m generator.cli \
     --skew high \
     --output s3://my-bucket/spark-skew \
     --glue-database sparkskew_db \
-    --glue-table orders_v3 \
     --customers-tablename customers_v3 \
     --orders-tablename orders_v3
 ```
@@ -118,7 +117,8 @@ This generates `--customers` customer records and `--order-events` order
 events, and writes them under `s3://my-bucket/spark-skew/customers_v3` and
 `s3://my-bucket/spark-skew/orders_v3` respectively. `--customers-tablename`
 and `--orders-tablename` are optional and default to `customers` and
-`orders`.
+`orders`. `--orders-tablename` also doubles as the Glue table name that
+`event_date` partitions are registered against.
 
 ## CLI Arguments
 
@@ -129,6 +129,5 @@ and `--orders-tablename` are optional and default to `customers` and
 | `--skew`                  | str  | yes      | Order-to-customer distribution pattern. One of `balance`, `low`, `high`. |
 | `--output`                | str  | yes      | S3 output prefix that datasets are written under.             |
 | `--glue-database`         | str  | yes      | Glue database to register order-event `event_date` partitions in. |
-| `--glue-table`             | str  | yes      | Glue table to register order-event `event_date` partitions against. |
 | `--customers-tablename`   | str  | no       | Table name for the customers dataset; used as the S3 folder name customers are written under (`{output}/{customers-tablename}`). Defaults to `customers`. |
-| `--orders-tablename`      | str  | no       | Table name for the orders dataset; used as the S3 folder name order events are written under (`{output}/{orders-tablename}`). Defaults to `orders`. |
+| `--orders-tablename`      | str  | no       | Table name for the orders dataset; used as the S3 folder name order events are written under (`{output}/{orders-tablename}`), and as the Glue table `event_date` partitions are registered against. Defaults to `orders`. |
